@@ -1,9 +1,8 @@
 const express = require('express');
-const {uuid} = require('uuidv4')
-const app = express();
+const {uuid, isUuid} = require('uuidv4')
+const app = express()
 
 app.use(express.json())
-
 
 /**
  * Métodos HTTP:
@@ -31,6 +30,24 @@ app.use(express.json())
 
 const projects = [];
 
+function logRequests(req, res, next){
+    const {method, url} = req
+    const logLobael = `[${method.toUpperCase()} ${url}]`
+    console.log(logLobael)
+    
+    return next() // Próximo middleware
+}
+
+function validateProjectId(req, res, next){
+    const {id} = req.params
+    if (!isUuid(id)){
+        return res.status(400).json({error: 'Invalid project ID.'})
+    }
+    return next() // Próximo middleware
+}
+
+app.use(logRequests)
+app.use('/projects/:id', validateProjectId)
 
 app.get("/projects", (req, res) => {
     const {title, owner} = req.query
@@ -40,16 +57,16 @@ app.get("/projects", (req, res) => {
         : projects;
     
     return res.json(results)
-});
+})
 
 app.post("/projects", (req, res) => {
     const {title, owner} = req.body
     const project = {id: uuid(), title, owner}
     projects.push(project)
     return res.json(project)
-});
+})
 
-app.put("/projects/:id", (req, res) => {
+app.put("/projects/:id",(req, res) => {
     const {id} = req.params
     const {title, owner} = req.body
     const projectIndex = projects.findIndex( project => project.id === id)
@@ -61,7 +78,7 @@ app.put("/projects/:id", (req, res) => {
     projects[projectIndex] = project
     
     return res.json(project)
-});
+})
 
 app.delete("/projects/:id", (req, res) => {
     const {id} = req.params
@@ -73,8 +90,8 @@ app.delete("/projects/:id", (req, res) => {
     projects.splice(projectIndex, 1)
     
     return res.status(204).send()
-});
+})
 
 app.listen(3333, () => {
     console.log("🚀 Server starting http://localhost:3333/")
-});
+})
